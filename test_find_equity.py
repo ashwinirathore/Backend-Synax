@@ -16,7 +16,7 @@ class Test_best_similarity_score(unittest.TestCase):
         self.assertGreater(result['best_score'] , 50)
         print('\n Partial Match: ', result)
     def test_no_match(self):
-        result = best_Similarity_score('XYZ' ,"Reliance" , "RELIANCE" )
+        result = best_Similarity_score('Abcd' , "Reliance" , "RELIANCE")
         self.assertLess(result['best_score'] , 50)
         print('\n No match: ' , result)
 
@@ -38,7 +38,7 @@ class Test_find_equity_fuzzy(unittest.TestCase):
 
         find_equity.fetch_all_equities = fake_fetch_all_equities
         result = find_equity_fuzzy(FakeConn() , "Reliance")
-        self.assertEqual(result[0]['name'] ,    'Reliance Industries Limited')
+        self.assertEqual(result[0]['name'] , "Reliance Industries Limited")
         self.assertGreater(result[0] ['match_score'] , 70)
         print("/n Results: " , result)
 
