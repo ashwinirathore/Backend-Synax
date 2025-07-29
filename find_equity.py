@@ -43,9 +43,11 @@ def best_Similarity_score(user_input,name,nse_symbol):
 
     best_score = 0
     best_method = ''
+    all_scores = {}
 
     def check(score,method):
         nonlocal best_score , best_method
+        all_scores[method] = score
         if score > best_score:
             best_score = score
             best_method = method
@@ -63,28 +65,29 @@ def best_Similarity_score(user_input,name,nse_symbol):
     check(fuzz.token_sort_ratio(user_input_lower, nse_symbol), "nse_token_sort_fuzz")
 
     # RapidFuzz
-    check(rf.token_set_ratio(user_input_lower, name), "name_set_ratio_rapid")
-    check(rf.token_set_ratio(user_input_lower, nse_symbol), "nse_set_ratio_rapid")
-    check(rf.ratio(user_input_lower, name), "name_ratio_rapid")
-    check(rf.ratio(user_input_lower, nse_symbol), "nse_ratio_rapid")
+    #check(rf.token_set_ratio(user_input_lower, name), "name_set_ratio_rapid")
+    #check(rf.token_set_ratio(user_input_lower, nse_symbol), "nse_set_ratio_rapid")
+    #check(rf.ratio(user_input_lower, name), "name_ratio_rapid")
+    #check(rf.ratio(user_input_lower, nse_symbol), "nse_ratio_rapid")
 
     # Difflib
-    check(SequenceMatcher(None, user_input_lower, name).ratio() * 100, "name_difflib")
-    check(SequenceMatcher(None, user_input_lower, nse_symbol).ratio() * 100, "nse_difflib")
+    #check(SequenceMatcher(None, user_input_lower, name).ratio() * 100, "name_difflib")
+    #check(SequenceMatcher(None, user_input_lower, nse_symbol).ratio() * 100, "nse_difflib")
 
 
     # TextDistance
-    check(textdistance.levenshtein.normalized_similarity(user_input_lower, name) * 100, "name_textdistance")
-    check(textdistance.levenshtein.normalized_similarity(user_input_lower, nse_symbol) * 100, "nse_textdistance")
+    #check(textdistance.levenshtein.normalized_similarity(user_input_lower, name) * 100, "name_textdistance")
+    #check(textdistance.levenshtein.normalized_similarity(user_input_lower, nse_symbol) * 100, "nse_textdistance")
 
     # PolyFuzz
-    model = PolyFuzz("TF-IDF")
-    model.match([user_input_lower], [name])
-    check(model.get_matches()["Similarity"][0] * 100, "name_polyfuzz")
-    model.match([user_input_lower], [nse_symbol])
-    check(model.get_matches()["Similarity"][0] * 100, "nse_polyfuzz")
+    #model = PolyFuzz("TF-IDF")
+    #model.match([user_input_lower], [name])
+    #check(model.get_matches()["Similarity"][0] * 100, "name_polyfuzz")
+    #model.match([user_input_lower], [nse_symbol])
+    #check(model.get_matches()["Similarity"][0] * 100, "nse_polyfuzz")
 
-    return {"best_score": best_score, "best_method": best_method}
+
+    return {"best_score": best_score, "best_method": best_method, "all_scores": all_scores}
 
 
 
@@ -101,8 +104,18 @@ def find_equity_fuzzy(conn,user_input , threshold = 70):
         if result['best_score'] >= threshold:
             equity['match_score'] = result['best_score'] 
             equity['match_method'] = result['best_method']
+            equity['all_scores'] = result['all_scores'] 
             matched_equity.append(equity)
     matched_equity.sort(key=lambda x: x['match_score'], reverse=True)
+
+    if matched_equity:
+        best = matched_equity[0]
+
+        print("\n All fuzzyWuzzy scores:")
+        for method, score in best['all_scores'].items():
+            print(f"{method}: {score}")
+        print(f"\nBest Method: {best['match_method']} with score {best['match_score']}")
+    
     return matched_equity        
 
 
