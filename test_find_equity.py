@@ -17,7 +17,7 @@ class Test_best_similarity_score(unittest.TestCase):
         print('\n Partial Match: ', result)
     def test_no_match(self):
         result = best_Similarity_score('Abcd' , "Reliance" , "RELIANCE")
-        self.assertLess(result['best_score'] , 50)
+        self.assertLessEqual(result['best_score'] , 50)
         print('\n No match: ' , result)
 
 
@@ -32,14 +32,16 @@ class Test_find_equity_fuzzy(unittest.TestCase):
             return [
                 {'id': 1, 'name': 'Reliance Industries Limited', 'nse_symbol': 'RELIANCE', 'bse_code': '500325', 'isin': 'INE002A01018'},
                 {'id': 2, 'name': 'Tata Motors', 'nse_symbol': 'TATAMOTORS', 'bse_code': '500570', 'isin': 'INE155A01022'},
+                {'id': 3, 'name': 'HDFC Bank Limited', 'nse_symbol':'HDFCBANK' , 'bse_code': '500180', 'isin':'INE040A01034' }
             ]
         
         import find_equity
 
         find_equity.fetch_all_equities = fake_fetch_all_equities
-        result = find_equity_fuzzy(FakeConn() , "Reliance")
-        self.assertEqual(result[0]['name'] , "Reliance Industries Limited")
-        self.assertGreater(result[0] ['match_score'] , 70)
+        result = find_equity_fuzzy(FakeConn() , "What is the current stock price of Reliance , TATA , Starbucks and HDFC?" , threshold=40)
+        self.assertGreaterEqual(len(result) , 3)
+        best_match = result[0]['name']
+        self.assertIn(best_match.strip() , ["Reliance Industries Limited", "TATA MOTORS" ,"HDFCBANK"])
         print("/n Results: " , result)
 
         

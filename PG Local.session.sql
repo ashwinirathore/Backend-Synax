@@ -1,4 +1,4 @@
-CREATE TABLE equities_2 (
+CREATE TABLE equities_ (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     nse_symbol VARCHAR(50) NOT NULL UNIQUE,
@@ -7,7 +7,7 @@ CREATE TABLE equities_2 (
 );
 
 
-INSERT INTO equities_2 (name, nse_symbol, bse_code, isin)
+INSERT INTO equities_ (name, nse_symbol, bse_code, isin)
 VALUES
     ('Reliance Industries Limited', 'RELIANCE', '500325', 'INE002A01018'),
     ('Tata Consultancy Services Ltd', 'TCS', '532540', 'INE467A01029'),
