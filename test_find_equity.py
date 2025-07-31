@@ -41,7 +41,7 @@ class Test_find_equity_fuzzy(unittest.TestCase):
         result = find_equity_fuzzy(FakeConn() , "What is the current stock price of Reliance , TATA , Starbucks and HDFC?" , threshold=40)
         self.assertGreaterEqual(len(result) , 3)
         best_match = result[0]['name']
-        self.assertIn(best_match.strip() , ["Reliance Industries Limited", "TATA MOTORS" ,"HDFCBANK"])
+        self.assertIn(best_match , ["Reliance Industries Limited", "TATA MOTORS" ,"HDFCBANK"])
         print("/n Results: " , result)
 
         
