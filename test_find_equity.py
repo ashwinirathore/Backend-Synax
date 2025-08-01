@@ -20,6 +20,14 @@ class Test_best_similarity_score(unittest.TestCase):
         self.assertLessEqual(result['best_score'] , 50)
         print('\n No match: ' , result)
 
+    def typo_match(self):
+        typos = ['Relanice' , 'Relia' , 'Releance', 'Relliance']
+        for typo in typos:
+            result = best_Similarity_score(typos , 'Reliance' , 'RELIANCE')
+            self.assertGreater(result['best_score'] , 70 , f'Falied for typos {typo}')
+            print('\n Typo match: {typo}' , result)
+
+
 
 
 
