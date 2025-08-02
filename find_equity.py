@@ -131,8 +131,7 @@ def find_equity_fuzzy(conn,user_input , threshold_name = 70 , threshold_symbol =
                             'all_scores': result['all_scores']
                         })
         if best_equity:
-            return [best_equity]
-    return []
+            matched_equity.append(best_equity)
     matched_equity.sort(key=lambda x: x['match_score'], reverse=True)
 
     if matched_equity:
