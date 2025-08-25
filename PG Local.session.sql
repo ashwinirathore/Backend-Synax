@@ -1,4 +1,4 @@
-CREATE TABLE equities_ (
+CREATE TABLE IF NOT EXISTS equities_ (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     nse_symbol VARCHAR(50) NOT NULL UNIQUE,
@@ -12,4 +12,5 @@ VALUES
     ('Reliance Industries Limited', 'RELIANCE', '500325', 'INE002A01018'),
     ('Tata Consultancy Services Ltd', 'TCS', '532540', 'INE467A01029'),
     ('HDFC Bank Limited', 'HDFCBANK', '500180', 'INE040A01034'),
-    ('Infosys Limited', 'INFY', '500209', 'INE009A01021');
+    ('Infosys Limited', 'INFY', '500209', 'INE009A01021')
+ON CONFLICT (nse_symbol) DO NOTHING;    
