@@ -94,7 +94,7 @@ def best_Similarity_score(user_input,name,nse_symbol):
 
 
 
-def find_equity_fuzzy(conn,user_input , threshold_name = 70 , threshold_symbol = 70):
+def find_equity_fuzzy(conn,user_input , threshold_name = 70 , threshold_symbol = 60):
     all_equities = fetch_all_equities(conn)
     matched_equity = []
     words = re.findall(r'\w+', user_input.lower())
@@ -109,27 +109,20 @@ def find_equity_fuzzy(conn,user_input , threshold_name = 70 , threshold_symbol =
             result = best_Similarity_score(word , name , nse_symbol)
             best_score = result['best_score']
             best_method = result['best_method']
+            #print(f"Word: {word}, Best Score: {best_score}, Best Method: {best_method}")
 
          
-            if len(word) <= 4 and "nse" in best_method and best_score >= threshold_symbol:
-                if best_score > best_equity_score:
+            if best_score >= threshold_name or best_score >= threshold_symbol:
+                if best_score >= best_equity_score:
                     best_equity_score = best_score
                     best_equity = equity
-                    best_equity.update({
-                        'match_score': best_score,
-                        'match_method': best_method,
-                        'all_scores': result['all_scores']
-                    })
-
-            elif len(word) > 4 and "name" in best_method and best_score >= threshold_name:
-                    if best_score > best_equity_score:
-                        best_equity_score = best_score
-                        best_equity = equity
-                        best_equity.update({
+                    best_equity.update(
+                        {
                             'match_score': best_score,
                             'match_method': best_method,
                             'all_scores': result['all_scores']
-                        })
+                        }
+                    )
         if best_equity:
             matched_equity.append(best_equity)
     matched_equity.sort(key=lambda x: x['match_score'], reverse=True)
