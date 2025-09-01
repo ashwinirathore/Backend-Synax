@@ -14,3 +14,11 @@ venv/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Python
+.venv/
+venv/
+__pycache__/
+
+# Database Sessions
+*.sql
