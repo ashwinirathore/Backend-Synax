@@ -1,0 +1,170 @@
+import os 
+import psycopg2
+from dotenv import load_dotenv
+from fuzzywuzzy import fuzz
+from polyfuzz import PolyFuzz
+from rapidfuzz import fuzz as rf
+from difflib import SequenceMatcher
+import textdistance
+import re 
+
+load_dotenv()
+
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASSWORD = os.getenv('DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+DB_PORT = os.getenv('DB_PORT')
+
+def fetch_all_equities(conn):
+    cur = conn.cursor()
+    equities = []
+    try:
+        select_query = '''
+        SELECT id , name , nse_symbol , bse_code , isin
+        FROM equities_;
+    '''
+        cur.execute(select_query)
+        rows = cur.fetchall()
+        col_names = [descr[0] for descr in cur.description]
+        for row in rows:
+            equities.append(dict(zip(col_names , row)))
+    except psycopg2.Error as e:
+        print(f"Error fetching all equities: {e}")
+    finally:
+        cur.close()
+    return equities
+
+
+def best_Similarity_score(user_input,name,nse_symbol):
+    user_input_lower = user_input.lower()
+    name = name.lower()
+    nse_symbol = nse_symbol.lower()
+
+
+    best_score = 0
+    best_method = ''
+    all_scores = {}
+
+    def check(score,method):
+        nonlocal best_score , best_method
+        all_scores[method] = score
+        if score > best_score:
+            best_score = score
+            best_method = method
+
+
+
+    #The Fuzzwuzzy
+    check(fuzz.token_set_ratio(user_input_lower, name), "name_set_ratio_fuzz")
+    check(fuzz.token_set_ratio(user_input_lower, nse_symbol), "nse_set_ratio_fuzz")
+    check(fuzz.ratio(user_input_lower, name), "name_ratio_fuzz")
+    check(fuzz.ratio(user_input_lower, nse_symbol), "nse_ratio_fuzz")
+    check(fuzz.partial_ratio(user_input_lower, name), "name_partial_fuzz")
+    check(fuzz.partial_ratio(user_input_lower, nse_symbol), "nse_partial_fuzz")
+    check(fuzz.token_sort_ratio(user_input_lower, name), "name_token_sort_fuzz")
+    check(fuzz.token_sort_ratio(user_input_lower, nse_symbol), "nse_token_sort_fuzz")
+
+    # RapidFuzz
+    #check(rf.token_set_ratio(user_input_lower, name), "name_set_ratio_rapid")
+    #check(rf.token_set_ratio(user_input_lower, nse_symbol), "nse_set_ratio_rapid")
+    #check(rf.ratio(user_input_lower, name), "name_ratio_rapid")
+    #check(rf.ratio(user_input_lower, nse_symbol), "nse_ratio_rapid")
+
+    # Difflib
+    #check(SequenceMatcher(None, user_input_lower, name).ratio() * 100, "name_difflib")
+    #check(SequenceMatcher(None, user_input_lower, nse_symbol).ratio() * 100, "nse_difflib")
+
+
+    # TextDistance
+    #check(textdistance.levenshtein.normalized_similarity(user_input_lower, name) * 100, "name_textdistance")
+    #check(textdistance.levenshtein.normalized_similarity(user_input_lower, nse_symbol) * 100, "nse_textdistance")
+
+    # PolyFuzz
+    #model = PolyFuzz("TF-IDF")
+    #model.match([user_input_lower], [name])
+    #check(model.get_matches()["Similarity"][0] * 100, "name_polyfuzz")
+    #model.match([user_input_lower], [nse_symbol])
+    #check(model.get_matches()["Similarity"][0] * 100, "nse_polyfuzz")
+
+
+    return {"best_score": best_score, "best_method": best_method, "all_scores": all_scores}
+
+
+
+
+
+def find_equity_fuzzy(conn,user_input , threshold_name = 70 , threshold_symbol = 60):
+    all_equities = fetch_all_equities(conn)
+    matched_equity = []
+    words = re.findall(r'\w+', user_input.lower())
+
+    for equity in all_equities:
+        name = equity['name'].lower()
+        nse_symbol = equity['nse_symbol'].lower()
+
+        best_equity_score = 0
+        best_equity = None
+        for word in words:
+            result = best_Similarity_score(word , name , nse_symbol)
+            best_score = result['best_score']
+            best_method = result['best_method']
+            #print(f"Word: {word}, Best Score: {best_score}, Best Method: {best_method}")
+
+         
+            if best_score >= threshold_name or best_score >= threshold_symbol:
+                if best_score >= best_equity_score:
+                    best_equity_score = best_score
+                    best_equity = equity
+                    best_equity.update(
+                        {
+                            'match_score': best_score,
+                            'match_method': best_method,
+                            'all_scores': result['all_scores']
+                        }
+                    )
+        if best_equity:
+            matched_equity.append(best_equity)
+    matched_equity.sort(key=lambda x: x['match_score'], reverse=True)
+
+    if matched_equity:
+        best = matched_equity[0]
+
+        print("\n All fuzzyWuzzy scores:")
+        for method, score in best['all_scores'].items():
+            print(f"{method}: {score}")
+        print(f"\nBest Method: {best['match_method']} with score {best['match_score']}")
+    
+    return matched_equity        
+
+
+
+
+def test_db_connection():
+    conn = None
+    try:
+        conn = psycopg2.connect(database = DB_NAME,
+                                user = DB_USER,
+                                password = DB_PASSWORD,
+                                host = DB_HOST,
+                                port = DB_PORT)
+        print('Database is succesfully connected.')
+    except psycopg2.Error as e:
+        print(f"Database not connected successfully. Error: {e}")
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+            print('Database connection is closed')    
+if __name__ == '__main__':
+    test_db_connection()
+    conn = psycopg2.connect(database = DB_NAME,
+                            user = DB_USER, 
+                            password = DB_PASSWORD, 
+                            host = DB_HOST, 
+                            port = DB_PORT)
+    user_input = input('Enter a sentence with your equity name or NSE symbol:')
+    result = find_equity_fuzzy(conn , user_input)
+    print('Result:' , result)
+    conn.close()
